@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import axios from "axios";
+
 import Shop from "./pages/Shop";
 import Projects from "./pages/Projects";
 import Login from "./pages/Login";
@@ -12,6 +14,7 @@ import Navbar from "./components/Navbar";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import UserDashboard from "./pages/UserDashboard";
+import AdminProducts from "./pages/AdminProducts";
 
 // Protected Route Component
 function ProtectedRoute({ children, allowedRoles, user }) {
@@ -25,11 +28,29 @@ function ProtectedRoute({ children, allowedRoles, user }) {
 
 export default function App() {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Load user from localStorage on app start
+  // Load user from token on app start
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) setUser(JSON.parse(storedUser));
+    const token = localStorage.getItem("token");
+    if (token) {
+      axios
+        .get("http://127.0.0.1:5000/api/auth/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then((res) => {
+          setUser(res.data.user);
+          localStorage.setItem("user", JSON.stringify(res.data.user));
+        })
+        .catch(() => {
+          setUser(null);
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+        })
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
   }, []);
 
   const handleLogout = () => {
@@ -37,6 +58,8 @@ export default function App() {
     localStorage.removeItem("user");
     setUser(null);
   };
+
+  if (loading) return <div className="text-center mt-20">Loading...</div>;
 
   return (
     <Router>
@@ -56,7 +79,7 @@ export default function App() {
           path="/super-admin-dashboard"
           element={
             <ProtectedRoute allowedRoles={["super_admin"]} user={user}>
-              <SuperAdminDashboard user={user} />
+              <SuperAdminDashboard currentUser={user} />
             </ProtectedRoute>
           }
         />
@@ -64,7 +87,15 @@ export default function App() {
           path="/admin-dashboard"
           element={
             <ProtectedRoute allowedRoles={["admin", "super_admin"]} user={user}>
-              <AdminDashboard user={user} />
+              <AdminDashboard currentUser={user} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/products"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "super_admin"]} user={user}>
+              <AdminProducts />
             </ProtectedRoute>
           }
         />
@@ -72,7 +103,7 @@ export default function App() {
           path="/user-dashboard"
           element={
             <ProtectedRoute allowedRoles={["user", "admin", "super_admin"]} user={user}>
-              <UserDashboard user={user} />
+              <UserDashboard currentUser={user} />
             </ProtectedRoute>
           }
         />

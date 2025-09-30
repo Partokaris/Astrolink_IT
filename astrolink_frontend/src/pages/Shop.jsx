@@ -1,19 +1,110 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { fetchProducts } from "../api";
 import ProductCard from "../components/ProductCard";
+import CartSidebar from "../components/CartSidebar";
+import Wishlist from "../components/Wishlist";
+import ProductDetailModal from "../components/ProductDetailModal";
+
+const STORAGE_CART = "astrolink_cart_v1";
+const STORAGE_WISHLIST = "astrolink_wishlist_v1";
 
 export default function Shop() {
   const [products, setProducts] = useState([]);
+  const [query, setQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("All");
+  const [sortBy, setSortBy] = useState("newest");
+
+  const [cart, setCart] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(STORAGE_CART)) || []; } catch { return []; }
+  });
+  const [wishlist, setWishlist] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(STORAGE_WISHLIST)) || []; } catch { return []; }
+  });
+
+  const [showCart, setShowCart] = useState(false);
+  const [showWishlist, setShowWishlist] = useState(false);
+  const [detailProduct, setDetailProduct] = useState(null);
 
   useEffect(() => {
-    fetchProducts().then(res => setProducts(res.data));
+    fetchProducts().then(res => setProducts(res.data || []));
   }, []);
 
+  useEffect(() => { localStorage.setItem(STORAGE_CART, JSON.stringify(cart)); }, [cart]);
+  useEffect(() => { localStorage.setItem(STORAGE_WISHLIST, JSON.stringify(wishlist)); }, [wishlist]);
+
+  const handleAddToCart = (product) => {
+    setCart((prev) => {
+      const exists = prev.find((p) => p.id === product.id);
+      if (exists) return prev;
+      return [...prev, { ...product, qty: 1 }];
+    });
+    setShowCart(true);
+  };
+
+  const handleRemoveFromCart = (id) => setCart((prev) => prev.filter(p => p.id !== id));
+
+  const handleToggleWishlist = (product) => {
+    setWishlist((prev) => {
+      const exists = prev.find((p) => p.id === product.id);
+      if (exists) return prev.filter(p => p.id !== product.id);
+      return [...prev, product];
+    });
+  };
+
+  const isWishlisted = (id) => wishlist.some((p) => p.id === id);
+
+  const categories = useMemo(() => ["All", ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))] , [products]);
+
+  const filtered = useMemo(() => {
+    let out = products;
+    if (categoryFilter && categoryFilter !== "All") out = out.filter(p => p.category === categoryFilter);
+    if (query) out = out.filter(p => p.name.toLowerCase().includes(query.toLowerCase()) || (p.description || '').toLowerCase().includes(query.toLowerCase()));
+    if (sortBy === 'price_asc') out = out.slice().sort((a,b)=>a.price-b.price);
+    if (sortBy === 'price_desc') out = out.slice().sort((a,b)=>b.price-a.price);
+    if (sortBy === 'newest') out = out.slice().sort((a,b)=> new Date(b.created_at) - new Date(a.created_at));
+    return out;
+  }, [products, query, categoryFilter, sortBy]);
+
   return (
-    <div className="p-6 grid grid-cols-3 gap-6">
-      {products.map(product => (
-        <ProductCard key={product.id} product={product} />
-      ))}
+    <div className="min-h-screen p-6 bg-gray-900 text-white">
+      <header className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Shop</h1>
+          <p className="text-gray-400">Browse our IT products</p>
+        </div>
+
+        <div className="flex gap-3 items-center">
+          <input value={query} onChange={(e)=>setQuery(e.target.value)} placeholder="Search products..." className="p-2 rounded bg-gray-800/60" />
+          <select value={categoryFilter} onChange={(e)=>setCategoryFilter(e.target.value)} className="p-2 rounded bg-gray-800/60">
+            {categories.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <select value={sortBy} onChange={(e)=>setSortBy(e.target.value)} className="p-2 rounded bg-gray-800/60">
+            <option value="newest">Newest</option>
+            <option value="price_asc">Price: Low to High</option>
+            <option value="price_desc">Price: High to Low</option>
+          </select>
+          <button onClick={()=>setShowWishlist(true)} className="bg-pink-600 px-3 py-1 rounded">Wishlist ({wishlist.length})</button>
+          <button onClick={()=>setShowCart(true)} className="bg-green-600 px-3 py-1 rounded">Cart ({cart.length})</button>
+        </div>
+      </header>
+
+      <main>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {filtered.map(p => (
+            <ProductCard key={p.id} product={p} onAddToCart={handleAddToCart} onToggleWishlist={handleToggleWishlist} isWishlisted={isWishlisted(p.id)} onShowDetails={(prod)=>setDetailProduct(prod)} />
+          ))}
+        </div>
+      </main>
+
+      {showCart && (
+        <CartSidebar items={cart} onRemove={(id)=>handleRemoveFromCart(id)} onCheckout={()=>alert('Checkout not implemented')} onClose={()=>setShowCart(false)} />
+      )}
+
+      {showWishlist && (
+        <Wishlist items={wishlist} onRemove={(id)=>setWishlist(prev=>prev.filter(p=>p.id!==id))} onClose={()=>setShowWishlist(false)} />
+      )}
+
+      {detailProduct && <ProductDetailModal product={detailProduct} onClose={()=>setDetailProduct(null)} onAddToCart={handleAddToCart} />}
     </div>
   );
 }

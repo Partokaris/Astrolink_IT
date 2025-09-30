@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 
@@ -6,14 +6,30 @@ export default function Navbar({ user, onLogout }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Compute login state from user prop
   const isLoggedIn = !!user;
 
   const handleLogout = () => {
-    // Call logout function from App.jsx
     if (onLogout) onLogout();
     setMenuOpen(false);
     navigate("/login");
+  };
+
+  const handleDashboardClick = () => {
+    if (!user) return;
+    switch (user.role) {
+      case "super_admin":
+        navigate("/super-admin-dashboard");
+        break;
+      case "admin":
+        navigate("/admin-dashboard");
+        break;
+      case "user":
+        navigate("/user-dashboard");
+        break;
+      default:
+        navigate("/");
+    }
+    setMenuOpen(false); // close mobile menu if open
   };
 
   return (
@@ -31,6 +47,16 @@ export default function Navbar({ user, onLogout }) {
         <Link to="/shop" className="hover:text-purple-400">Shop</Link>
         <Link to="/projects" className="hover:text-purple-400">Projects</Link>
         <Link to="/testimonials" className="hover:text-purple-400">Testimonials</Link>
+
+        {/* Dashboard Button for Admins */}
+        {isLoggedIn && (user.role === "admin" || user.role === "super_admin") && (
+          <button
+            onClick={handleDashboardClick}
+            className="px-3 py-1 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow"
+          >
+            Dashboard
+          </button>
+        )}
 
         {!isLoggedIn ? (
           <Link
@@ -67,6 +93,16 @@ export default function Navbar({ user, onLogout }) {
           <Link to="/shop" onClick={() => setMenuOpen(false)}>Shop</Link>
           <Link to="/projects" onClick={() => setMenuOpen(false)}>Projects</Link>
           <Link to="/testimonials" onClick={() => setMenuOpen(false)}>Testimonials</Link>
+
+          {/* Dashboard Button for Mobile */}
+          {isLoggedIn && (user.role === "admin" || user.role === "super_admin") && (
+            <button
+              onClick={handleDashboardClick}
+              className="px-3 py-1 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow"
+            >
+              Dashboard
+            </button>
+          )}
 
           {!isLoggedIn ? (
             <Link to="/login" onClick={() => setMenuOpen(false)}>Login</Link>
