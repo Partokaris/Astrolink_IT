@@ -24,8 +24,15 @@ export default function AdminList() {
         setAdmins(response.data);
         setLoading(false);
       } catch (err) {
-        console.error("Error fetching admins:", err.response || err);
-        setError(err.response?.data?.error || "Failed to fetch admins");
+        console.error("Error fetching admins:", err);
+        const status = err.response?.status;
+        if (status === 401) {
+          setError("Unauthorized. Please login again.");
+        } else if (status === 403) {
+          setError("Access denied. You need super admin privileges.");
+        } else {
+          setError(err.response?.data?.error || "Failed to fetch admins");
+        }
         setLoading(false);
       }
     };
@@ -34,7 +41,16 @@ export default function AdminList() {
   }, []);
 
   if (loading) return <p>Loading admins...</p>;
-  if (error) return <p className="text-red-500">{error}</p>;
+  if (error) return (
+    <div>
+      <p className="text-red-500">{error}</p>
+      {error.includes('login') && (
+        <div className="mt-2">
+          <a href="/login" className="text-sm text-purple-300 underline">Go to login</a>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="mt-6">

@@ -65,6 +65,19 @@ export default function Shop() {
     return out;
   }, [products, query, categoryFilter, sortBy]);
 
+  // Group products by category for sectioned display
+  const groupedByCategory = useMemo(() => {
+    const map = {};
+    for (const p of products) {
+      const key = p.category || 'Uncategorized';
+      if (!map[key]) map[key] = [];
+      map[key].push(p);
+    }
+    return map;
+  }, [products]);
+
+  const newest = useMemo(() => products.slice().sort((a,b)=> new Date(b.created_at)-new Date(a.created_at)).slice(0,6), [products]);
+
   return (
     <div className="min-h-screen p-6 bg-gray-900 text-white">
       <header className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -89,11 +102,44 @@ export default function Shop() {
       </header>
 
       <main>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {filtered.map(p => (
-            <ProductCard key={p.id} product={p} onAddToCart={handleAddToCart} onToggleWishlist={handleToggleWishlist} isWishlisted={isWishlisted(p.id)} onShowDetails={(prod)=>setDetailProduct(prod)} />
-          ))}
-        </div>
+        {/* If user is searching or filtering, show the filtered grid; otherwise show sections */}
+        {(query || (categoryFilter && categoryFilter !== 'All')) ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {filtered.map(p => (
+              <ProductCard key={p.id} product={p} onAddToCart={handleAddToCart} onToggleWishlist={handleToggleWishlist} isWishlisted={isWishlisted(p.id)} onShowDetails={(prod)=>setDetailProduct(prod)} />
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-10">
+            {/* Featured section */}
+            <section>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold">Featured</h2>
+                <a className="text-sm text-purple-300">See all</a>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {newest.map(p => (
+                  <ProductCard key={p.id} product={p} onAddToCart={handleAddToCart} onToggleWishlist={handleToggleWishlist} isWishlisted={isWishlisted(p.id)} onShowDetails={(prod)=>setDetailProduct(prod)} />
+                ))}
+              </div>
+            </section>
+
+            {/* Per-category sections */}
+            {Object.keys(groupedByCategory).map((cat) => (
+              <section key={cat}>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-bold">{cat}</h2>
+                  <a className="text-sm text-purple-300">See all</a>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {groupedByCategory[cat].slice(0,8).map(p => (
+                    <ProductCard key={p.id} product={p} onAddToCart={handleAddToCart} onToggleWishlist={handleToggleWishlist} isWishlisted={isWishlisted(p.id)} onShowDetails={(prod)=>setDetailProduct(prod)} />
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        )}
       </main>
 
       {showCart && (
