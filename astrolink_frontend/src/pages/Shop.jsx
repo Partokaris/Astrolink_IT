@@ -4,6 +4,7 @@ import ProductCard from "../components/ProductCard";
 import CartSidebar from "../components/CartSidebar";
 import Wishlist from "../components/Wishlist";
 import ProductDetailModal from "../components/ProductDetailModal";
+import { useNavigate } from 'react-router-dom';
 
 const STORAGE_CART = "astrolink_cart_v1";
 const STORAGE_WISHLIST = "astrolink_wishlist_v1";
@@ -24,6 +25,7 @@ export default function Shop() {
   const [showCart, setShowCart] = useState(false);
   const [showWishlist, setShowWishlist] = useState(false);
   const [detailProduct, setDetailProduct] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchProducts().then(res => setProducts(res.data || []));
@@ -143,7 +145,7 @@ export default function Shop() {
       </main>
 
       {showCart && (
-        <CartSidebar items={cart} onRemove={(id)=>handleRemoveFromCart(id)} onCheckout={()=>alert('Checkout not implemented')} onClose={()=>setShowCart(false)} />
+        <CartSidebar items={cart} onRemove={(id)=>handleRemoveFromCart(id)} onCheckout={()=>{ setShowCart(false); navigate('/checkout'); }} onClose={()=>setShowCart(false)} />
       )}
 
       {showWishlist && (

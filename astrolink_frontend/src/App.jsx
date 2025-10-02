@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Testimonials from "./pages/Testimonials";
 import Home from "./pages/Home";
+import Checkout from "./pages/Checkout";
 import Navbar from "./components/Navbar";
 
 // Dashboards
@@ -73,6 +74,7 @@ export default function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/projects" element={<Projects />} />
         <Route path="/testimonials" element={<Testimonials />} />
+  <Route path="/checkout" element={<Checkout />} />
 
         {/* Protected Routes */}
         <Route

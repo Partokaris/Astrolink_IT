@@ -90,6 +90,20 @@ CREATE TABLE IF NOT EXISTS testimonials (
 ) ENGINE=InnoDB
 """
 
+# 8. Orders
+TABLES['orders'] = """
+CREATE TABLE IF NOT EXISTS orders (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    customer_name VARCHAR(255) NOT NULL,
+    customer_email VARCHAR(255) NOT NULL,
+    shipping_address TEXT,
+    items JSON NOT NULL,
+    total DECIMAL(10,2) NOT NULL,
+    status VARCHAR(50) DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB
+"""
+
 def main():
     try:
         cnx = mysql.connector.connect(
@@ -107,7 +121,7 @@ def main():
         # Create tables in correct order
         for table_name in [
             'roles', 'users', 'permissions', 'role_permissions',
-            'products', 'projects', 'testimonials'
+            'products', 'projects', 'testimonials', 'orders'
         ]:
             table_sql = TABLES[table_name]
             try:

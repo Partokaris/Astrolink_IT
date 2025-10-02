@@ -7,6 +7,11 @@ from routes.products import products_bp
 from routes.projects import projects_bp
 from routes.testimonials import testimonials_bp
 from routes.uploads import upload_bp
+try:
+    # prefer the fixed blueprint if present
+    from routes.orders_clean import orders_bp
+except Exception:
+    from routes.orders import orders_bp
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -37,6 +42,7 @@ app.register_blueprint(auth_bp, url_prefix='/api/auth')
 app.register_blueprint(products_bp, url_prefix='/api/products')
 app.register_blueprint(projects_bp, url_prefix='/api/projects')
 app.register_blueprint(testimonials_bp, url_prefix='/api/testimonials')
+app.register_blueprint(orders_bp, url_prefix='/api/orders')
 
 
 from flask import send_from_directory
